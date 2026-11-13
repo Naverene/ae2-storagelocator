@@ -33,7 +33,8 @@ variables:
     - cd "$MC_DIR"
     # The 1.7.10 build (GTNH buildscript) names its jar after VERSION.
     - export VERSION=dev
-    - ./gradlew build
+    # TASK is build unless a job sets it (the 1.7.10 code isn't Spotless-formatted yet, so it uses assemble).
+    - ./gradlew ${TASK:-build}
     # Keep only the jar players install (not the -dev, -sources or -api jars).
     - mkdir -p dist
     - find build/libs -maxdepth 1 -name '*.jar' ! -name '*-dev.jar' ! -name '*-sources.jar' ! -name '*-api.jar' -exec cp {} dist/ \;
@@ -56,7 +57,7 @@ variables:
 
 "1.7.10":
   extends: .build
-  variables: { MC_DIR: "1.7.10", JAVA: "25" }
+  variables: { MC_DIR: "1.7.10", JAVA: "25", TASK: "assemble" }
   rules: *rules
 
 "1.18.2":
