@@ -1,6 +1,6 @@
 package com.claudecode.storagelocator;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -19,8 +19,14 @@ public class LateMixins implements ILateMixinLoader {
 
     @Override
     public List<String> getMixins(Set<String> loadedMods) {
-        if (!loadedMods.contains("appliedenergistics2") || !FMLLaunchHandler.side()
-            .isClient()) return Collections.emptyList();
-        return Collections.singletonList("VirtualMESlotTooltipMixin");
+        List<String> out = new ArrayList<>();
+        if (!loadedMods.contains("appliedenergistics2")) return out;
+        if (FMLLaunchHandler.side()
+            .isClient()) out.add("VirtualMESlotTooltipMixin");
+        if (loadedMods.contains("gregtech")) {
+            out.add("DigitalStorageStatusMixin");
+            out.add("DigitalChestScannerMixin");
+        }
+        return out;
     }
 }

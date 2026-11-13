@@ -29,7 +29,7 @@ import cpw.mods.fml.relauncher.Side;
     name = "AE2 Storage Locator",
     version = Tags.VERSION,
     acceptableRemoteVersions = "*",
-    dependencies = "required-after:appliedenergistics2")
+    dependencies = "required-after:appliedenergistics2;after:gregtech;after:gtstorageclusters")
 public class StorageLocator {
 
     public static final Logger LOG = LogManager.getLogger("ae2storagelocator");
