@@ -1,0 +1,11 @@
+[
+  {
+    "modid": "${mod_id}",
+    "name": "${mod_name}",
+    "description": "Hover an item or fluid in an AE2 terminal to see which drives, cells and storage buses hold it, and press Insert to highlight them in the world.",
+    "version": "${mod_version}",
+    "mcversion": "${minecraft_version}",
+    "authorList": ["Naverene"],
+    "dependencies": ["appliedenergistics2"]
+  }
+]

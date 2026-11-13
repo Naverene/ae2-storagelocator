@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.claudecode.storagelocator.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "MEStorageScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

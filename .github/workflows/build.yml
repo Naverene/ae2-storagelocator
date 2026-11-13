@@ -1,0 +1,185 @@
+# Builds every Minecraft version of the mod, each from its own folder with its own Java, and publishes
+# the jars:
+# - pull requests build only the versions whose folders they change (all of them if this workflow changes)
+# - every push (including merges) to the default branch builds all versions and updates the rolling
+#   "Development build" pre-release with every version's jar
+# - pushing a version tag such as v1.2.0 builds all versions as that mod version and publishes one release
+#   with every jar
+# Every build keeps its jar as a downloadable artifact on the run's page.
+
+name: Build
+
+on:
+  push:
+    branches: [ "master", "main" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "master", "main" ]
+  workflow_dispatch:
+
+jobs:
+  plan:
+    name: Pick the versions to build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      versions: ${{ steps.plan.outputs.versions }}
+    env:
+      # One entry per version folder. `java` builds it. The folder name is the Minecraft version unless
+      # `mc` says otherwise. `checkout` lists every folder the build reads, one per line, when that is
+      # more than its own. `task` replaces `build` when set: the 1.7.10 code isn't Spotless-formatted yet,
+      # so it skips the format check (run ./gradlew spotlessApply in 1.7.10, then drop it).
+      VERSIONS: |
+        [
+          { "dir": "1.7.10", "java": "25", "loader": "forge", "task": "assemble" },
+          { "dir": "1.12.2", "java": "8",  "loader": "forge" },
+          { "dir": "1.16.5", "java": "8",  "loader": "forge" },
+          { "dir": "1.18.2", "java": "17", "loader": "forge" },
+          { "dir": "1.19.2", "java": "17", "loader": "forge" },
+          { "dir": "1.20.1", "java": "17", "loader": "forge" },
+          { "dir": "1.20.1-fabric", "mc": "1.20.1", "java": "21", "loader": "fabric" },
+          { "dir": "1.21.1", "java": "21", "loader": "neoforge" },
+          { "dir": "26.1.2", "java": "25", "loader": "neoforge" },
+          { "dir": "26.3",   "java": "25", "loader": "neoforge" }
+        ]
+    steps:
+    - uses: actions/checkout@v7
+      if: github.event_name == 'pull_request'
+      with:
+        # Only commit history is needed to list the changed files.
+        fetch-depth: 0
+        sparse-checkout: .github
+
+    - name: Pick the versions to build
+      id: plan
+      env:
+        BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      run: |
+        if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+          changed=$(git diff --no-renames --name-only "$BASE_SHA"...HEAD | cut -d/ -f1 | sort -u | sed 's#$#/#')
+          if grep -q '^\.github/' <<< "$changed"; then
+            versions=$(jq -c . <<< "$VERSIONS")
+          else
+            versions=$(jq -c --arg changed "$changed" \
+              '[.[] | . as $v | (($v.checkout // $v.dir) | split("\n")) as $dirs
+                | select($changed | split("\n") | any(. as $f | $dirs | any(. as $d | $f | startswith($d + "/"))))]' <<< "$VERSIONS")
+          fi
+        else
+          versions=$(jq -c . <<< "$VERSIONS")
+        fi
+        echo "Building: $(jq -r 'map(.dir) | join(", ")' <<< "$versions")"
+        echo "versions=$versions" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Minecraft ${{ matrix.dir }}
+    needs: plan
+    if: needs.plan.outputs.versions != '[]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      # One version failing must not cancel the others.
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.versions) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
+
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        # Only this version's folder (and any it reads) is checked out. The 1.7.10 build also gets the
+        # commit history, so it can name dev builds after the latest tag with git describe.
+        sparse-checkout: ${{ matrix.checkout || matrix.dir }}
+        fetch-depth: ${{ matrix.dir == '1.7.10' && '0' || '1' }}
+
+    - name: Set up JDK ${{ matrix.java }}
+      uses: actions/setup-java@v6
+      with:
+        java-version: ${{ matrix.java }}
+        distribution: 'temurin'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      with:
+        cache-provider: basic
+        add-job-summary: on-failure
+
+    # A version tag such as v1.2.0 sets the mod version; other builds use the one in gradle.properties.
+    # The 1.7.10 build (GTNH buildscript) reads the VERSION variable instead, and names other builds
+    # after the latest tag.
+    - name: Work out the mod version
+      run: |
+        if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+          version="${GITHUB_REF_NAME#v}"
+          echo "ORG_GRADLE_PROJECT_mod_version=$version" >> "$GITHUB_ENV"
+        else
+          version=$(git describe --tags --match 'v*' 2>/dev/null | sed 's/^v//')
+        fi
+        echo "VERSION=${version:-dev}" >> "$GITHUB_ENV"
+
+    - name: Build with Gradle Wrapper
+      run: ./gradlew ${{ matrix.task || 'build' }}
+
+    # Keep only the jar players install (not the -dev, -sources or -api jars).
+    - name: Collect the mod jar
+      run: |
+        mkdir -p dist
+        find build/libs -maxdepth 1 -name '*.jar' \
+          ! -name '*-dev.jar' ! -name '*-sources.jar' ! -name '*-api.jar' \
+          -exec cp {} dist/ \;
+        ls -l dist
+
+    - name: Upload the mod jar
+      uses: actions/upload-artifact@v7
+      with:
+        name: AE2StorageLocator-${{ matrix.dir }}
+        path: ${{ matrix.dir }}/dist/*.jar
+        if-no-files-found: error
+
+  publish:
+    name: Publish the jars on GitHub
+    needs: build
+    # Pushes and merges to the default branch, and version tags. Never pull requests.
+    if: (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch) || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    concurrency:
+      group: publish-${{ github.ref }}
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+
+    steps:
+    - name: Download the mod jars
+      uses: actions/download-artifact@v8
+      with:
+        pattern: AE2StorageLocator-*
+        merge-multiple: true
+        path: dist
+
+    - name: Update the development build
+      if: github.ref_name == github.event.repository.default_branch
+      run: |
+        ls -l dist
+        gh release delete dev-build --yes --cleanup-tag || true
+        gh release create dev-build dist/*.jar \
+          --target "$GITHUB_SHA" \
+          --prerelease \
+          --title "Development build" \
+          --notes "Latest build of $GITHUB_REF_NAME for every Minecraft version, from commit $GITHUB_SHA. Untested; for testing only."
+
+    - name: Publish the release for this version
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        ls -l dist
+        if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+          gh release upload "$GITHUB_REF_NAME" dist/*.jar --clobber
+        else
+          gh release create "$GITHUB_REF_NAME" dist/*.jar \
+            --title "AE2 Storage Locator $GITHUB_REF_NAME" \
+            --generate-notes
+        fi

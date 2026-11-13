@@ -1,0 +1,60 @@
+plugins {
+    id 'fabric-loom' version '1.11.8'
+}
+
+// The jar is named ae2storagelocator-<mod version>-<Minecraft version>-fabric.jar.
+version = "${mod_version}-${minecraft_version}-fabric"
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+// Mojang ships Java 17 to end users in 1.20.1, so the mod targets Java 17. Gradle itself may run on a newer JDK.
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 17
+}
+
+repositories {
+    maven {
+        name = 'ModMaven (Applied Energistics 2)'
+        url = 'https://modmaven.dev/'
+        content { includeGroup 'appeng' }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    // Mojang's names, the same ones the Forge 1.20.1 build uses, so the code reads the same in both.
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+
+    modCompileOnly("appeng:appliedenergistics2-fabric:${ae2_version}") { transitive = false }
+}
+
+loom {
+    runs {
+        configureEach {
+            runDir = 'run'
+        }
+    }
+}
+
+processResources {
+    var replaceProperties = [
+            minecraft_version: minecraft_version, loader_version: loader_version,
+            mod_id: mod_id, mod_name: mod_name, mod_version: mod_version,
+            mod_authors: mod_authors, mod_description: mod_description,
+    ]
+    inputs.properties replaceProperties
+    filesMatching('fabric.mod.json') {
+        expand replaceProperties
+    }
+}
