@@ -10,13 +10,15 @@ This repository holds every version of the mod, one folder per Minecraft version
 | Folder | Minecraft | Loader | AE2 | Java |
 | --- | --- | --- | --- | --- |
 | [1.7.10](1.7.10) | 1.7.10 | Forge (GTNH buildscript) | rv3-beta GTNH | 8 to play, 25 to build (the GTNH buildscript needs it) |
+| [1.18.2](1.18.2) | 1.18.2 | Forge | 11.x | 17 |
+| [1.19.2](1.19.2) | 1.19.2 | Forge | 12.x | 17 |
 | [1.20.1](1.20.1) | 1.20.1 | Forge | 15.x | 17 |
 | [1.21.1](1.21.1) | 1.21.1 | NeoForge | 19.x | 21 |
 | [26.1.2](26.1.2) | 26.1.2 | NeoForge | 26.1.x (beta) | 25 |
 | [26.3](26.3) | 26.3 | NeoForge | 26.3.x (alpha) | 25 |
 
 More Minecraft versions are on the way, one folder each, for the versions More Dyes targets that have an AE2
-release: 1.12.2, 1.16.5, 1.18.2, 1.19.2, and 1.20.1 Fabric.
+release: 1.12.2, 1.16.5 and 1.20.1 Fabric.
 
 The GregTech parts of the 1.7.10 version (Super/Quantum Chest status, gtstorageclusters, WAILA) are 1.7.10 only.
 

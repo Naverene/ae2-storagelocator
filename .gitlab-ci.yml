@@ -59,6 +59,16 @@ variables:
   variables: { MC_DIR: "1.7.10", JAVA: "25" }
   rules: *rules
 
+"1.18.2":
+  extends: .build
+  variables: { MC_DIR: "1.18.2", JAVA: "17" }
+  rules: *rules
+
+"1.19.2":
+  extends: .build
+  variables: { MC_DIR: "1.19.2", JAVA: "17" }
+  rules: *rules
+
 "1.20.1":
   extends: .build
   variables: { MC_DIR: "1.20.1", JAVA: "17" }
