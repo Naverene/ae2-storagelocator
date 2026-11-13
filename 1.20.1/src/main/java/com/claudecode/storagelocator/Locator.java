@@ -76,7 +76,7 @@ final class Locator {
         long rest = 0;
         for (int i = 0; i < hits.size(); i++) {
             Hit h = hits.get(i);
-            if (h.pos != null && h.level == p.level()) positions.add(h.pos);
+            if (h.pos != null && h.level == p.level() && positions.size() < 4096) positions.add(h.pos);
             if (i >= SHOWN) {
                 rest += h.amount;
                 continue;
