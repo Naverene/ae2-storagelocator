@@ -31,7 +31,8 @@ jobs:
       # more than its own.
       VERSIONS: |
         [
-          { "dir": "1.7.10", "java": "21", "loader": "forge" }
+          { "dir": "1.7.10", "java": "21", "loader": "forge" },
+          { "dir": "1.20.1", "java": "17", "loader": "forge" }
         ]
     steps:
     - uses: actions/checkout@v7
