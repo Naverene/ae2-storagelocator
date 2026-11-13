@@ -36,6 +36,7 @@ import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.client.gui.GuiUtils;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
@@ -156,15 +157,27 @@ public final class ClientState {
         e.getToolTip().addAll(linesFor(what));
     }
 
-    /** Fluid entries: AE2 builds their tooltip itself, so add the lines just before it is drawn. */
-    @SuppressWarnings("unchecked")
+    private static boolean redrawing;
+
+    /**
+     * Fluid entries: AE2 builds their tooltip itself, and the event's lines are read-only, so draw the tooltip again
+     * with the lines added and cancel the original.
+     */
     private static void onFluidTooltip(RenderTooltipEvent.Pre e) {
+        if (redrawing) return;
         IAEStack<?> what = hovered();
         if (!(what instanceof IAEFluidStack) || !e.getStack().isEmpty()) return;
+        List<ITextComponent> extra = linesFor(what);
+        if (extra.isEmpty()) return;
+        List<ITextProperties> lines = new ArrayList<>(e.getLines());
+        lines.addAll(extra);
+        e.setCanceled(true);
+        redrawing = true;
         try {
-            ((List<ITextProperties>) e.getLines()).addAll(linesFor(what));
-        } catch (UnsupportedOperationException ignored) {
-            // A fixed list: this tooltip isn't the terminal's own.
+            GuiUtils.drawHoveringText(e.getMatrixStack(), lines, e.getX(), e.getY(), e.getScreenWidth(),
+                    e.getScreenHeight(), e.getMaxWidth(), e.getFontRenderer());
+        } finally {
+            redrawing = false;
         }
     }
 

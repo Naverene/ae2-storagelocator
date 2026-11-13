@@ -60,6 +60,11 @@ variables:
   variables: { MC_DIR: "1.7.10", JAVA: "25", TASK: "assemble" }
   rules: *rules
 
+"1.12.2":
+  extends: .build
+  variables: { MC_DIR: "1.12.2", JAVA: "8" }
+  rules: *rules
+
 "1.16.5":
   extends: .build
   variables: { MC_DIR: "1.16.5", JAVA: "8" }

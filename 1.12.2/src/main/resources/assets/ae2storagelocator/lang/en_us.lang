@@ -1,0 +1,12 @@
+key.categories.ae2storagelocator=AE2 Storage Locator
+key.ae2storagelocator.highlight=Highlight where the hovered item is stored
+ae2storagelocator.locating=Locating...
+ae2storagelocator.not_stored=Not stored on this network
+ae2storagelocator.stored_in=Stored in %s places:
+ae2storagelocator.stored_in_one=Stored in 1 place:
+ae2storagelocator.more= + %s more: %s
+ae2storagelocator.cell_in=%s in %s
+ae2storagelocator.slot=slot %s
+ae2storagelocator.subnet=(subnet)
+ae2storagelocator.highlighted=Highlighted %s places holding %s for %s seconds
+ae2storagelocator.nothing_to_highlight=%s is not stored in any block on this network
