@@ -44,6 +44,7 @@ public class StorageLocator {
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent e) {
+        Config.load(e.getModConfigurationDirectory());
         NET = NetworkRegistry.INSTANCE.newSimpleChannel("ae2storageloc");
         NET.registerMessage(LocateRequest.Handler.class, LocateRequest.class, 0, Side.SERVER);
         NET.registerMessage(LocateReply.Handler.class, LocateReply.class, 1, Side.CLIENT);
@@ -54,6 +55,8 @@ public class StorageLocator {
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent e) {
+        if (e.getSide()
+            .isClient()) ClientKeys.register();
         // Storage bus cluster line in WAILA (needs GT for the chests/tanks it describes).
         if (Loader.isModLoaded("Waila") && Loader.isModLoaded("gregtech"))
             FMLInterModComms.sendMessage("Waila", "register", "com.claudecode.storagelocator.WailaBus.register");

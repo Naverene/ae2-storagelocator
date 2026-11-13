@@ -22,7 +22,11 @@ public class LateMixins implements ILateMixinLoader {
         List<String> out = new ArrayList<>();
         if (!loadedMods.contains("appliedenergistics2")) return out;
         if (FMLLaunchHandler.side()
-            .isClient()) out.add("TerminalTooltipMixin");
+            .isClient()) {
+            out.add("TerminalTooltipMixin");
+            out.add("TerminalHighlightKeyMixin");
+            out.add("HighlightDurationMixin");
+        }
         if (loadedMods.contains("gregtech")) {
             out.add("DigitalStorageStatusMixin");
             out.add("DigitalChestScannerMixin");

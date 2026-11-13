@@ -66,39 +66,7 @@ final class Locator {
         World w = p.worldObj;
 
         Map<String, Long> where = new LinkedHashMap<>();
-        for (IGridNode n : grid.getNodes()) {
-            Object m = n.getMachine();
-            if (!(m instanceof ICellProvider)) continue;
-            List<IMEInventoryHandler> hs;
-            try {
-                hs = ((ICellProvider) m).getCellArray(ch);
-            } catch (RuntimeException | LinkageError e) {
-                continue;
-            }
-            if (hs == null || hs.isEmpty()) continue;
-            TileEntity te = tileOf(m);
-            int idx = -1;
-            for (IMEInventoryHandler h : hs) {
-                idx++;
-                if (h == null) continue;
-                long count;
-                try {
-                    IItemList l = fluids ? AEApi.instance()
-                        .storage()
-                        .createFluidList()
-                        : AEApi.instance()
-                            .storage()
-                            .createItemList();
-                    h.getAvailableItems(l);
-                    IAEStack hit = l.findPrecise(want);
-                    count = hit == null ? 0 : hit.getStackSize();
-                } catch (RuntimeException e) {
-                    continue;
-                }
-                if (count <= 0) continue;
-                where.merge(label(m, te, idx, w, grid), count, Long::sum);
-            }
-        }
+        collect(grid, want, fluids, ch, w, 0, new java.util.HashSet<>(), "", where);
         if (where.isEmpty()) {
             out.add(EnumChatFormatting.DARK_GRAY + "Not stored on this network");
             return out;
@@ -125,6 +93,94 @@ final class Locator {
         if (es.size() > SHOWN) out.add(
             EnumChatFormatting.DARK_GRAY + " + " + (es.size() - SHOWN) + " more: " + nf.format(rest) + unit);
         return out;
+    }
+
+    /** Every storage on `grid` holding `want`; drives by cell slot, subnets behind storage buses walked into. */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private static void collect(IGrid grid, IAEStack want, boolean fluids, StorageChannel ch, World w, int depth,
+        java.util.Set<IGrid> seen, String suffix, Map<String, Long> where) {
+        if (grid == null || depth > 3 || !seen.add(grid)) return;
+        for (IGridNode n : grid.getNodes()) {
+            Object m = n.getMachine();
+            if (!(m instanceof ICellProvider)) continue;
+            TileEntity te = tileOf(m);
+            // Drives and ME chests: read each cell slot so the label can say which slot.
+            if (m instanceof appeng.api.implementations.tiles.IChestOrDrive) {
+                Object inv = call(m, "getInternalInventory");
+                if (inv instanceof IInventory) {
+                    IInventory ii = (IInventory) inv;
+                    String holder = te == null ? "ME Drive" : blockName(w, te.xCoord, te.yCoord, te.zCoord);
+                    String at = te == null ? "" : " @ " + te.xCoord + " " + te.yCoord + " " + te.zCoord;
+                    for (int i = 0; i < ii.getSizeInventory(); i++) {
+                        ItemStack cell = ii.getStackInSlot(i);
+                        if (cell == null) continue;
+                        IMEInventoryHandler h;
+                        try {
+                            h = AEApi.instance()
+                                .registries()
+                                .cell()
+                                .getCellInventory(cell, null, ch);
+                        } catch (RuntimeException | LinkageError e) {
+                            continue;
+                        }
+                        long c = count(h, want, fluids);
+                        if (c > 0) where.merge(
+                            cell.getDisplayName() + " in " + holder + at + ", slot " + (i + 1) + suffix,
+                            c,
+                            Long::sum);
+                    }
+                    continue;
+                }
+            }
+            // A storage bus facing another AE network: look inside that network instead.
+            if (m instanceof IPart && te != null) {
+                ForgeDirection side = sideOf(m);
+                if (side != null && side != ForgeDirection.UNKNOWN) {
+                    int fx = te.xCoord + side.offsetX, fy = te.yCoord + side.offsetY, fz = te.zCoord + side.offsetZ;
+                    TileEntity ft = w.getTileEntity(fx, fy, fz);
+                    if (ft instanceof IGridHost) {
+                        IGridNode fn = ((IGridHost) ft).getGridNode(side.getOpposite());
+                        if (fn == null) fn = ((IGridHost) ft).getGridNode(ForgeDirection.UNKNOWN);
+                        IGrid sub = fn == null ? null : fn.getGrid();
+                        if (sub != null && sub != grid) {
+                            collect(sub, want, fluids, ch, w, depth + 1, seen, " (subnet)", where);
+                            continue;
+                        }
+                    }
+                }
+            }
+            List<IMEInventoryHandler> hs;
+            try {
+                hs = ((ICellProvider) m).getCellArray(ch);
+            } catch (RuntimeException | LinkageError e) {
+                continue;
+            }
+            if (hs == null) continue;
+            int idx = -1;
+            for (IMEInventoryHandler h : hs) {
+                idx++;
+                long c = count(h, want, fluids);
+                if (c > 0) where.merge(label(m, te, idx, w, grid) + suffix, c, Long::sum);
+            }
+        }
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private static long count(IMEInventoryHandler h, IAEStack want, boolean fluids) {
+        if (h == null) return 0;
+        try {
+            IItemList l = fluids ? AEApi.instance()
+                .storage()
+                .createFluidList()
+                : AEApi.instance()
+                    .storage()
+                    .createItemList();
+            h.getAvailableItems(l);
+            IAEStack hit = l.findPrecise(want);
+            return hit == null ? 0 : hit.getStackSize();
+        } catch (RuntimeException e) {
+            return 0;
+        }
     }
 
     /** "64k ME Storage Cell in Drive @ x y z", "Drawer Controller @ x y z", "Super Tank I @ x y z (subnet)". */
