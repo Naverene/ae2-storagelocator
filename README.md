@@ -6,6 +6,9 @@ Super Chests, tanks, subnets...) hold it, and how many each. The six biggest hol
 
 - Server: answers from the network of the terminal the player has open (max 20 lookups/s per player).
 - Client: asks once per stack and caches the answer for 5 s; shows "Locating..." until it arrives.
+- GT Super/Quantum Chests and Tanks get a WAILA (and portable scanner) line saying whether they're in AE: which
+  storage bus sees them and how many steps away, or why not (no bus, several buses on one group, past the group
+  limit). Understands gtstorageclusters groups when that mod is installed.
 - Install on both sides for the tooltip. Either side alone loads fine and does nothing.
 
 Built against appliedenergistics2 rv3-beta-1095-GTNH. `./gradlew assemble` (needs a git tag for the version).
