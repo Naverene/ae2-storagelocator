@@ -1,19 +1,36 @@
 # AE2 Storage Locator
 
-GTNH (Minecraft 1.7.10) add-on for Applied Energistics 2: hover an item or fluid in any AE terminal and the
-tooltip lists where the network keeps it — which drive cells, ME chests and storage-bus targets (drawers,
-Super Chests, tanks, subnets...) hold it, and how many each. The six biggest holders are listed, the rest summed.
+An add-on for Applied Energistics 2: hover an item or fluid in any AE terminal and the tooltip lists where the
+network keeps it (which drive cells, ME chests and storage-bus targets hold it, and how many each). A key press
+in the terminal outlines those blocks in the world.
 
-- Server: answers from the network of the terminal the player has open (max 20 lookups/s per player).
-- Client: asks once per stack and caches the answer for 5 s; shows "Locating..." until it arrives.
-- Press **Insert** (rebindable: Options > Controls > AE2 Storage Locator) on an item in an ME terminal: the
-  terminal closes and the blocks holding it are outlined in the world, drive cell slots included (AE2's own
-  find-in-storage highlight). `config/ae2storagelocator.cfg` `highlightSeconds` (default 30) sets how long.
-- Drives are listed by cell, drive and slot; storage buses facing another AE network list that network's drives
-  ("(subnet)").
-- GT Super/Quantum Chests and Tanks get a WAILA (and portable scanner) line saying whether they're in AE: which
-  storage bus sees them and how many steps away, or why not (no bus, several buses on one group, past the group
-  limit). Understands gtstorageclusters groups when that mod is installed.
-- Install on both sides for the tooltip. Either side alone loads fine and does nothing.
+This repository holds every version of the mod, one folder per Minecraft version, laid out like
+[More Dyes](https://github.com/Naverene/moredyes):
 
-Built against appliedenergistics2 rv3-beta-1095-GTNH. `./gradlew assemble` (needs a git tag for the version).
+| Folder | Minecraft | Loader | AE2 | Java |
+| --- | --- | --- | --- | --- |
+| [1.7.10](1.7.10) | 1.7.10 | Forge (GTNH buildscript) | rv3-beta GTNH | 8 to play, 21 to build |
+
+More Minecraft versions are on the way, one folder each, for the versions More Dyes targets that have an AE2
+release: 1.12.2, 1.16.5, 1.18.2, 1.19.2, 1.20.1 (Forge and Fabric), 1.21.1, 26.1.2 and 26.3.
+
+Each Minecraft folder is its own Gradle project with its own wrapper. Open the folder for the version you want in
+your IDE (not the repository root), and run `./gradlew build` inside it. The jar lands in that folder's
+`build/libs`. See each folder's README for what that version does and how it is built.
+
+## Builds
+
+GitHub Actions (`.github/workflows/build.yml`) builds every version folder:
+
+- a pull request builds only the versions whose folders it changes (all of them if the workflow changes)
+- every push to the default branch builds all versions and updates the rolling "Development build" pre-release
+- pushing a version tag such as `v1.2.0` builds all versions as that mod version and publishes one release with
+  every jar
+
+`.gitlab-ci.yml` does the same everyday builds on a self-hosted GitLab, like More Dyes.
+
+## Adding a Minecraft version
+
+1. Make a new folder named after the Minecraft version (add `-fabric` when the loader is Fabric and the plain
+   name is taken by Forge or NeoForge), with its own Gradle wrapper, `.gitignore` and `README.md`.
+2. Add it to the table above, to `VERSIONS` in `.github/workflows/build.yml` and as a job in `.gitlab-ci.yml`.

@@ -1,0 +1,60 @@
+# Everyday builds for a self-hosted GitLab, like More Dyes. GitHub builds and publishes releases (v* tags);
+# see .github/workflows/build.yml.
+#
+# - a merge request builds only the versions whose folders it changes
+# - a push to a branch builds the versions changed since the branch's last push
+# - a pipeline started by hand (Build > Pipelines > Run pipeline) builds every version
+# Each job keeps its jar for a week, on the job's page.
+#
+# The jobs run in eclipse-temurin Docker images, so the runner needs the Docker executor.
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+variables:
+  GRADLE_USER_HOME: $CI_PROJECT_DIR/.gradle-home
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
+
+.build:
+  stage: build
+  image: eclipse-temurin:${JAVA}-jdk
+  # MC_DIR (the version folder) and JAVA are set by each job below.
+  cache:
+    key: gradle-$MC_DIR
+    paths:
+      - .gradle-home/caches/
+      - .gradle-home/wrapper/
+  script:
+    - cd "$MC_DIR"
+    # The 1.7.10 build (GTNH buildscript) names its jar after VERSION.
+    - export VERSION=dev
+    - ./gradlew build
+    # Keep only the jar players install (not the -dev, -sources or -api jars).
+    - mkdir -p dist
+    - find build/libs -maxdepth 1 -name '*.jar' ! -name '*-dev.jar' ! -name '*-sources.jar' ! -name '*-api.jar' -exec cp {} dist/ \;
+    - ls -l dist
+  artifacts:
+    name: AE2StorageLocator-$MC_DIR
+    when: always
+    expire_in: 1 week
+    paths:
+      - $MC_DIR/dist/*.jar
+
+# Changes to this file rebuild every version.
+.rules_template: &rules
+  - if: $CI_PIPELINE_SOURCE == "web"
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    changes:
+      paths: &paths [ "$MC_DIR/**/*", ".gitlab-ci.yml" ]
+      compare_to: $CI_MERGE_REQUEST_DIFF_BASE_SHA
+  - changes: *paths
+
+"1.7.10":
+  extends: .build
+  variables: { MC_DIR: "1.7.10", JAVA: "21" }
+  rules: *rules
