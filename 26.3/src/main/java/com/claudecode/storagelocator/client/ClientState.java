@@ -9,8 +9,6 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.datafixers.util.Either;
 
-import org.lwjgl.glfw.GLFW;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -56,7 +54,7 @@ public final class ClientState {
             Identifier.fromNamespaceAndPath(StorageLocator.MOD_ID, "main"));
 
     public static final KeyMapping HIGHLIGHT = new KeyMapping("key.ae2storagelocator.highlight",
-            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_INSERT, CATEGORY);
+            InputConstants.Type.KEYBOARD, InputConstants.KEY_INSERT, CATEGORY);
 
     /** A whole block, drawn as an outline at each highlighted position. */
     private static final VoxelShape BLOCK = Shapes.create(-0.005, -0.005, -0.005, 1.005, 1.005, 1.005);
@@ -127,7 +125,7 @@ public final class ClientState {
 
     /** The key of the terminal entry under the mouse, when the tooltip shown is that entry's. */
     private static AEKey hoveredKey() {
-        if (!(Minecraft.getInstance().screen instanceof MEStorageScreen<?> screen)) return null;
+        if (!(Minecraft.getInstance().gui.screen() instanceof MEStorageScreen<?> screen)) return null;
         if (!(screen.getSlotUnderMouse() instanceof RepoSlot slot)) return null;
         if (!screen.getMenu().getCarried().isEmpty()) return null;
         var entry = slot.getEntry();
