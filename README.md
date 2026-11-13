@@ -13,12 +13,13 @@ This repository holds every version of the mod, one folder per Minecraft version
 | [1.18.2](1.18.2) | 1.18.2 | Forge | 11.x | 17 |
 | [1.19.2](1.19.2) | 1.19.2 | Forge | 12.x | 17 |
 | [1.20.1](1.20.1) | 1.20.1 | Forge | 15.x | 17 |
+| [1.20.1-fabric](1.20.1-fabric) | 1.20.1 | Fabric (needs Fabric API) | 15.x | 17 to play, 21 to build |
 | [1.21.1](1.21.1) | 1.21.1 | NeoForge | 19.x | 21 |
 | [26.1.2](26.1.2) | 26.1.2 | NeoForge | 26.1.x (beta) | 25 |
 | [26.3](26.3) | 26.3 | NeoForge | 26.3.x (alpha) | 25 |
 
 More Minecraft versions are on the way, one folder each, for the versions More Dyes targets that have an AE2
-release: 1.12.2, 1.16.5 and 1.20.1 Fabric.
+release: 1.12.2 and 1.16.5.
 
 The GregTech parts of the 1.7.10 version (Super/Quantum Chest status, gtstorageclusters, WAILA) are 1.7.10 only.
 

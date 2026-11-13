@@ -36,6 +36,7 @@ jobs:
           { "dir": "1.18.2", "java": "17", "loader": "forge" },
           { "dir": "1.19.2", "java": "17", "loader": "forge" },
           { "dir": "1.20.1", "java": "17", "loader": "forge" },
+          { "dir": "1.20.1-fabric", "mc": "1.20.1", "java": "21", "loader": "fabric" },
           { "dir": "1.21.1", "java": "21", "loader": "neoforge" },
           { "dir": "26.1.2", "java": "25", "loader": "neoforge" },
           { "dir": "26.3",   "java": "25", "loader": "neoforge" }
