@@ -1,0 +1,4 @@
+dependencies {
+    compileOnly("com.github.GTNewHorizons:Applied-Energistics-2-Unofficial:rv3-beta-1095-GTNH:dev") { transitive = false }
+    compileOnly("com.github.GTNewHorizons:GTNHLib:0.11.48:dev") { transitive = false }
+}
