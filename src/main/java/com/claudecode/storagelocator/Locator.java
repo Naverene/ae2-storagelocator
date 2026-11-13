@@ -149,6 +149,8 @@ final class Locator {
                     }
                 }
             }
+            // A storage bus on a GT Super/Quantum Chest or Tank: name the actual chest/tank in its group.
+            if (m instanceof IPart && te != null && clusterMembers(m, te, w, want, fluids, suffix, where)) continue;
             List<IMEInventoryHandler> hs;
             try {
                 hs = ((ICellProvider) m).getCellArray(ch);
@@ -162,6 +164,61 @@ final class Locator {
                 long c = count(h, want, fluids);
                 if (c > 0) where.merge(label(m, te, idx, w, grid) + suffix, c, Long::sum);
             }
+        }
+    }
+
+    /**
+     * When this storage bus faces a GT digital chest/tank, report each touching chest/tank (the group a gtstorageclusters
+     * bus sees, or just the one) holding `want` under its own name and position. False when the bus faces something else.
+     */
+    private static boolean clusterMembers(Object part, TileEntity te, World w, IAEStack want, boolean fluids, String suffix,
+        Map<String, Long> where) {
+        try {
+            ForgeDirection side = sideOf(part);
+            if (side == null || side == ForgeDirection.UNKNOWN) return false;
+            TileEntity first = w.getTileEntity(te.xCoord + side.offsetX, te.yCoord + side.offsetY, te.zCoord + side.offsetZ);
+            if (first == null) return false;
+            boolean tanks = ClusterStatus.tank(first) != null;
+            if (!tanks && ClusterStatus.chest(first) == null) return false;
+            if (tanks != fluids) return false;
+            int limit = Math.max(1, ClusterStatus.max());
+            java.util.ArrayDeque<TileEntity> todo = new java.util.ArrayDeque<>();
+            java.util.Set<Long> seen = new java.util.HashSet<>();
+            todo.add(first);
+            seen.add(((long) first.xCoord & 0x3FFFFFF) << 38 | ((long) first.zCoord & 0x3FFFFFF) << 12 | (first.yCoord & 0xFFF));
+            int visited = 0;
+            boolean any = false;
+            while (!todo.isEmpty() && visited < limit) {
+                TileEntity t = todo.poll();
+                visited++;
+                long c = 0;
+                if (tanks) {
+                    FluidStack f = ClusterStatus.tank(t)
+                        .getFluid();
+                    FluidStack wf = ((appeng.api.storage.data.IAEFluidStack) want).getFluidStack();
+                    if (f != null && wf != null && f.isFluidEqual(wf)) c = f.amount;
+                } else {
+                    IItemList<appeng.api.storage.data.IAEItemStack> l = ClusterStatus.chest(t)
+                        .getStorageList();
+                    IAEStack hit = l == null ? null : l.findPrecise((appeng.api.storage.data.IAEItemStack) want);
+                    c = hit == null ? 0 : hit.getStackSize();
+                }
+                if (c > 0) {
+                    any = true;
+                    where.merge(blockName(w, t.xCoord, t.yCoord, t.zCoord) + " @ " + t.xCoord + " " + t.yCoord + " " + t.zCoord + suffix, c, Long::sum);
+                }
+                if (ClusterStatus.max() == 0) break; // no gtstorageclusters: the bus sees only this block
+                for (ForgeDirection d : ForgeDirection.VALID_DIRECTIONS) {
+                    int nx = t.xCoord + d.offsetX, ny = t.yCoord + d.offsetY, nz = t.zCoord + d.offsetZ;
+                    long k = ((long) nx & 0x3FFFFFF) << 38 | ((long) nz & 0x3FFFFFF) << 12 | (ny & 0xFFF);
+                    if (ny < 0 || ny > 255 || !seen.add(k) || !w.blockExists(nx, ny, nz)) continue;
+                    TileEntity n = w.getTileEntity(nx, ny, nz);
+                    if (n != null && (tanks ? ClusterStatus.tank(n) != null : ClusterStatus.chest(n) != null)) todo.add(n);
+                }
+            }
+            return any;
+        } catch (RuntimeException | LinkageError e) {
+            return false;
         }
     }
 
