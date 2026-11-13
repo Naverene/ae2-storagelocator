@@ -110,9 +110,9 @@ final class Locator {
                 continue;
             }
             lines.add(new StringTextComponent(" - ").mergeStyle(TextFormatting.DARK_GRAY)
-                    .append(h.label.deepCopy().mergeStyle(TextFormatting.WHITE))
-                    .append(new StringTextComponent(": ").mergeStyle(TextFormatting.GRAY))
-                    .append(new StringTextComponent(nf.format(h.amount) + unit).mergeStyle(TextFormatting.GREEN)));
+                    .appendSibling(h.label.deepCopy().mergeStyle(TextFormatting.WHITE))
+                    .appendSibling(new StringTextComponent(": ").mergeStyle(TextFormatting.GRAY))
+                    .appendSibling(new StringTextComponent(nf.format(h.amount) + unit).mergeStyle(TextFormatting.GREEN)));
         }
         if (hits.size() > SHOWN) {
             lines.add(new TranslationTextComponent("ae2storagelocator.more", hits.size() - SHOWN,
@@ -155,9 +155,9 @@ final class Locator {
             if (c <= 0) continue;
             IFormattableTextComponent label = new TranslationTextComponent("ae2storagelocator.cell_in",
                     cell.getDisplayName(), holder);
-            label.append(at(te.getPos())).appendString(", ")
-                    .append(new TranslationTextComponent("ae2storagelocator.slot", slot + 1));
-            if (subnet) label.appendString(" ").append(new TranslationTextComponent("ae2storagelocator.subnet"));
+            label.appendSibling(at(te.getPos())).appendString(", ")
+                    .appendSibling(new TranslationTextComponent("ae2storagelocator.slot", slot + 1));
+            if (subnet) label.appendString(" ").appendSibling(new TranslationTextComponent("ae2storagelocator.subnet"));
             add(where, "d|" + te.getPos().toLong() + "|" + slot, label, c, te.getPos(), te.getWorld());
         }
     }
@@ -190,8 +190,8 @@ final class Locator {
         }
         if (c <= 0) return;
         IFormattableTextComponent label = world.getBlockState(target).getBlock().getTranslatedName().deepCopy();
-        label.append(at(target));
-        if (subnet) label.appendString(" ").append(new TranslationTextComponent("ae2storagelocator.subnet"));
+        label.appendSibling(at(target));
+        if (subnet) label.appendString(" ").appendSibling(new TranslationTextComponent("ae2storagelocator.subnet"));
         add(where, "b|" + target.toLong(), label, c, target, world);
     }
 
