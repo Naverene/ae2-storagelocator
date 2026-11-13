@@ -11,7 +11,10 @@ import org.apache.logging.log4j.Logger;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
+import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLInterModComms;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.common.network.NetworkRegistry;
@@ -47,6 +50,13 @@ public class StorageLocator {
         FMLCommonHandler.instance()
             .bus()
             .register(this);
+    }
+
+    @Mod.EventHandler
+    public void init(FMLInitializationEvent e) {
+        // Storage bus cluster line in WAILA (needs GT for the chests/tanks it describes).
+        if (Loader.isModLoaded("Waila") && Loader.isModLoaded("gregtech"))
+            FMLInterModComms.sendMessage("Waila", "register", "com.claudecode.storagelocator.WailaBus.register");
     }
 
     /** At most 20 lookups a second per player. */

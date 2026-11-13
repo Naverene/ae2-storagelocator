@@ -153,6 +153,56 @@ public final class ClusterStatus {
                 + max() + " blocks and this group has " + group);
     }
 
+    /** WAILA line for a storage bus facing x,y,z: how much of a chest/tank group it sees. Null when not relevant. */
+    public static String busLine(World w, int x, int y, int z, boolean fluidBus) {
+        if (w == null || w.isRemote || max() == 0 || !w.blockExists(x, y, z)) return null;
+        TileEntity t = w.getTileEntity(x, y, z);
+        if (t == null) return null;
+        boolean tanks = tank(t) != null;
+        if (!tanks && chest(t) == null) return null;
+        if (tanks != fluidBus) return null;
+        String noun = tanks ? "tanks" : "chests";
+        int size = 0, buses = 0;
+        ArrayDeque<TileEntity> todo = new ArrayDeque<>();
+        java.util.Set<Long> seen = new java.util.HashSet<>();
+        todo.add(t);
+        seen.add(key(x, y, z));
+        while (!todo.isEmpty() && size < WALK_LIMIT) {
+            TileEntity te = todo.poll();
+            size++;
+            if (busFacing(te, tanks)) buses++;
+            for (ForgeDirection d : ForgeDirection.VALID_DIRECTIONS) {
+                int nx = te.xCoord + d.offsetX, ny = te.yCoord + d.offsetY, nz = te.zCoord + d.offsetZ;
+                if (ny < 0 || ny > 255 || !seen.add(key(nx, ny, nz)) || !w.blockExists(nx, ny, nz)) continue;
+                TileEntity n = w.getTileEntity(nx, ny, nz);
+                if (n == null || (tanks ? tank(n) == null : chest(n) == null)) continue;
+                todo.add(n);
+            }
+        }
+        if (size <= 1) return null;
+        String group = size >= WALK_LIMIT ? WALK_LIMIT + "+" : String.valueOf(size);
+        if (buses > 1) return bad("Cluster: " + group + " " + noun + " with " + buses + " buses; each bus sees only its own block");
+        if (size <= max()) return ok("Cluster: sees all " + group + " " + noun);
+        return bad("Cluster: sees " + max() + " of " + group + " " + noun + "; " + (size - max()) + " not in AE (limit " + max() + ")");
+    }
+
+    /** "Locked to: X" for a Super/Quantum Chest locked with gtstorageclusters' wire cutter, else null. */
+    public static String lockLine(World w, int x, int y, int z) {
+        if (w == null || w.isRemote || !Loader.isModLoaded("gtstorageclusters")) return null;
+        MTEDigitalChestBase c = chest(w.getTileEntity(x, y, z));
+        if (c == null) return null;
+        try {
+            Object lock = Class.forName("com.claudecode.storageclusters.ChestLock")
+                .getMethod("of", MTEDigitalChestBase.class)
+                .invoke(null, c);
+            return lock instanceof net.minecraft.item.ItemStack
+                ? EnumChatFormatting.YELLOW + "Locked to: " + ((net.minecraft.item.ItemStack) lock).getDisplayName()
+                : null;
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
     /** Order in which a bus on `from` would see `target` (breadth first, like StorageClusters.group), -1 if not met. */
     private static int rank(TileEntity from, TileEntity target, boolean tanks, int[] dist) {
         World w = from.getWorldObj();

@@ -22,7 +22,7 @@ public class LateMixins implements ILateMixinLoader {
         List<String> out = new ArrayList<>();
         if (!loadedMods.contains("appliedenergistics2")) return out;
         if (FMLLaunchHandler.side()
-            .isClient()) out.add("VirtualMESlotTooltipMixin");
+            .isClient()) out.add("TerminalTooltipMixin");
         if (loadedMods.contains("gregtech")) {
             out.add("DigitalStorageStatusMixin");
             out.add("DigitalChestScannerMixin");

@@ -32,6 +32,8 @@ public abstract class DigitalStorageStatusMixin {
         int x, int y, int z, CallbackInfo ci) {
         String s = ClusterStatus.describe(world, x, y, z);
         if (s != null) tag.setString("ae2slStatus", s);
+        String lock = ClusterStatus.lockLine(world, x, y, z);
+        if (lock != null) tag.setString("ae2slLock", lock);
     }
 
     @Inject(method = "getWailaBody", at = @At("TAIL"))
@@ -39,5 +41,6 @@ public abstract class DigitalStorageStatusMixin {
         IWailaConfigHandler cfg, CallbackInfo ci) {
         NBTTagCompound tag = acc.getNBTData();
         if (tag != null && tag.hasKey("ae2slStatus")) tip.add(tag.getString("ae2slStatus"));
+        if (tag != null && tag.hasKey("ae2slLock")) tip.add(tag.getString("ae2slLock"));
     }
 }
