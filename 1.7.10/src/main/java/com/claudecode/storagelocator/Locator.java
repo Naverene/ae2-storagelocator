@@ -104,13 +104,17 @@ final class Locator {
             Object m = n.getMachine();
             if (!(m instanceof ICellProvider)) continue;
             TileEntity te = tileOf(m);
+            // The storage's own world: a network can reach other dimensions (quantum bridges), and looking its
+            // coordinates up in the player's world names whatever is there instead (air, water...).
+            World tw = te != null && te.getWorldObj() != null ? te.getWorldObj() : w;
+            String dim = tw == w ? "" : " in " + dimName(tw);
             // Drives and ME chests: read each cell slot so the label can say which slot.
             if (m instanceof appeng.api.implementations.tiles.IChestOrDrive) {
                 Object inv = call(m, "getInternalInventory");
                 if (inv instanceof IInventory) {
                     IInventory ii = (IInventory) inv;
-                    String holder = te == null ? "ME Drive" : blockName(w, te.xCoord, te.yCoord, te.zCoord);
-                    String at = te == null ? "" : " @ " + te.xCoord + " " + te.yCoord + " " + te.zCoord;
+                    String holder = te == null ? "ME Drive" : blockName(tw, te.xCoord, te.yCoord, te.zCoord);
+                    String at = te == null ? "" : " @ " + te.xCoord + " " + te.yCoord + " " + te.zCoord + dim;
                     for (int i = 0; i < ii.getSizeInventory(); i++) {
                         ItemStack cell = ii.getStackInSlot(i);
                         if (cell == null) continue;
@@ -137,20 +141,20 @@ final class Locator {
                 ForgeDirection side = sideOf(m);
                 if (side != null && side != ForgeDirection.UNKNOWN) {
                     int fx = te.xCoord + side.offsetX, fy = te.yCoord + side.offsetY, fz = te.zCoord + side.offsetZ;
-                    TileEntity ft = w.getTileEntity(fx, fy, fz);
+                    TileEntity ft = tw.getTileEntity(fx, fy, fz);
                     if (ft instanceof IGridHost) {
                         IGridNode fn = ((IGridHost) ft).getGridNode(side.getOpposite());
                         if (fn == null) fn = ((IGridHost) ft).getGridNode(ForgeDirection.UNKNOWN);
                         IGrid sub = fn == null ? null : fn.getGrid();
                         if (sub != null && sub != grid) {
-                            collect(sub, want, fluids, ch, w, depth + 1, seen, " (subnet)", where);
+                            collect(sub, want, fluids, ch, w, depth + 1, seen, dim + " (subnet)", where);
                             continue;
                         }
                     }
                 }
             }
             // A storage bus on a GT Super/Quantum Chest or Tank: name the actual chest/tank in its group.
-            if (m instanceof IPart && te != null && clusterMembers(m, te, w, want, fluids, suffix, where)) continue;
+            if (m instanceof IPart && te != null && clusterMembers(m, te, tw, want, fluids, dim + suffix, where)) continue;
             List<IMEInventoryHandler> hs;
             try {
                 hs = ((ICellProvider) m).getCellArray(ch);
@@ -162,7 +166,7 @@ final class Locator {
             for (IMEInventoryHandler h : hs) {
                 idx++;
                 long c = count(h, want, fluids);
-                if (c > 0) where.merge(label(m, te, idx, w, grid) + suffix, c, Long::sum);
+                if (c > 0) where.merge(label(m, te, idx, tw, grid) + dim + suffix, c, Long::sum);
             }
         }
     }
@@ -266,6 +270,17 @@ final class Locator {
             if (cell != null) return cell.getDisplayName() + " in " + holder + at;
         }
         return holder + at;
+    }
+
+    /** "the Nether", "DIM-1" when the provider has no name. */
+    private static String dimName(World w) {
+        try {
+            String n = w.provider.getDimensionName();
+            if (n != null && !n.isEmpty()) return n;
+        } catch (RuntimeException e) {
+            // fall through
+        }
+        return "DIM" + w.provider.dimensionId;
     }
 
     private static String blockName(World w, int x, int y, int z) {
